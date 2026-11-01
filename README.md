@@ -124,3 +124,16 @@ GitHub: https://github.com/gauri06srivastava-create
 ---
 
 ⭐ If you find StudyOS useful, consider giving this repository a star!
+ 
+## 🏗️ System Architecture
+
+```mermaid
+flowchart TD
+    A[Student] --> B[StudyOS Frontend]
+    B --> C[React + Vite]
+    C --> D[FastAPI Backend]
+    D --> E[PDF Processing - PyMuPDF]
+    D --> F[Groq API]
+    C --> G[Browser LocalStorage]
+    G --> H[Quiz History and Study Data]
+```
