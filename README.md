@@ -128,12 +128,12 @@ GitHub: https://github.com/gauri06srivastava-create
 ## 🏗️ System Architecture
 
 ```mermaid
-flowchart TD
-    A[Student] --> B[StudyOS Frontend]
-    B --> C[React + Vite]
-    C --> D[FastAPI Backend]
-    D --> E[PDF Processing - PyMuPDF]
-    D --> F[Groq API]
-    C --> G[Browser LocalStorage]
-    G --> H[Quiz History and Study Data]
+graph TD
+    A["Student"] --> B["Frontend"]
+    B --> C["React and Vite"]
+    C --> D["FastAPI Backend"]
+    D --> E["PDF Processing"]
+    D --> F["Groq API"]
+    C --> G["Local Storage"]
+    G --> H["Quiz History"]
 ```
