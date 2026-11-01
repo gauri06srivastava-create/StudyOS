@@ -125,15 +125,63 @@ GitHub: https://github.com/gauri06srivastava-create
 
 ⭐ If you find StudyOS useful, consider giving this repository a star!
  
+
 ## 🏗️ System Architecture
 
 ```mermaid
-graph TD
-    A["Student"] --> B["Frontend"]
-    B --> C["React and Vite"]
-    C --> D["FastAPI Backend"]
-    D --> E["PDF Processing"]
-    D --> F["Groq API"]
-    C --> G["Local Storage"]
-    G --> H["Quiz History"]
+flowchart TB
+    U["Student"] --> FE
+
+    subgraph FRONTEND["Frontend - React + Vite"]
+        FE["StudyOS Interface"]
+        FE --> DB["Dashboard"]
+        FE --> DOC["Document Library"]
+        FE --> TUTOR["AI Tutor"]
+        FE --> QUIZ["Quiz & Practice"]
+        FE --> PROG["Progress Tracking"]
+        FE --> REV["Smart Revision"]
+        FE --> TIMER["Study Timer"]
+        FE --> PLAN["AI Study Plan"]
+    end
+
+    subgraph BACKEND["Backend - Python + FastAPI"]
+        API["REST API"]
+        UP["PDF Upload API"]
+        NOTES["Notes Generation API"]
+        ASK["Ask PDF API"]
+        QGEN["Quiz Generation API"]
+        SGEN["Study Plan API"]
+    end
+
+    FE --> API
+    API --> UP
+    API --> NOTES
+    API --> ASK
+    API --> QGEN
+    API --> SGEN
+
+    subgraph AI["AI & Document Processing"]
+        PDF["PyMuPDF - Text Extraction"]
+        GROQ["Groq API - LLM Processing"]
+    end
+
+    UP --> PDF
+    PDF --> NOTES
+    PDF --> ASK
+    NOTES --> GROQ
+    ASK --> GROQ
+    QGEN --> GROQ
+    SGEN --> GROQ
+
+    subgraph STORAGE["Browser Storage"]
+        LS["LocalStorage"]
+        HISTORY["Quiz History"]
+        STUDY["Study Data"]
+        SAVED["Saved Study Plans"]
+    end
+
+    FE <--> LS
+    LS --> HISTORY
+    LS --> STUDY
+    LS --> SAVED
 ```
