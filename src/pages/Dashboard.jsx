@@ -40,12 +40,13 @@ function Dashboard() {
   const dailyGoal = Number(localStorage.getItem('studyos_daily_goal') || 3)
   const dailyMinutes = Number(localStorage.getItem('studyos_daily_minutes') || 0)
 
+
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/health')
-      .then(response => response.json())
-      .then(data => setBackendStatus(data.status))
-      .catch(() => setBackendStatus('Disconnected'))
-  }, [])
+  fetch('http://127.0.0.1:8000/health')
+    .then(response => response.json())
+    .then(data => setBackendStatus(data.status))
+    .catch(() => setBackendStatus('Disconnected'))
+}, [])
 
   // Average quiz score
   const averageScore = history.length > 0

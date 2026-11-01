@@ -1190,3 +1190,58 @@ details summary {
 .saved-plan-card a:hover {
   text-decoration: underline;
 }
+.notes-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.download-notes-btn {
+  margin-top: 16px;
+  margin-bottom: 20px;
+}
+
+.generated-notes {
+  margin-bottom: 24px;
+}
+
+.ask-pdf-section {
+  margin-top: 24px;
+}
+.chat-message {
+  margin-top: 18px;
+}
+
+.chat-message {
+  margin-top: 18px;
+}
+
+.user-message,
+.ai-message {
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.user-message {
+  background: rgba(124, 58, 237, 0.15);
+  margin-left: 35px;
+}
+
+.ai-message {
+  background: rgba(255, 255, 255, 0.06);
+  margin-right: 35px;
+}
+
+.user-message p,
+.ai-message p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.typing-message {
+  opacity: 0.7;
+}

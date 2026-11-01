@@ -1,29 +1,26 @@
+
 import { useEffect, useState } from 'react'
+import jsPDF from 'jspdf'
 
 function Document() {
   const [documents, setDocuments] = useState(() => {
-  try {
-    return JSON.parse(
-      localStorage.getItem('studyos_documents') || '[]'
-    )
-  } catch {
-    return []
-  }
-})
+    try {
+      return JSON.parse(
+        localStorage.getItem('studyos_documents') || '[]'
+      )
+    } catch {
+      return []
+    }
+  })
 
-useEffect(() => {
-  localStorage.setItem(
-    'studyos_documents',
-    JSON.stringify(documents)
-  )
-}, [documents])
+  
+
   const [loading, setLoading] = useState(false)
-
   const [generatedNotes, setGeneratedNotes] = useState({})
   const [generatingId, setGeneratingId] = useState(null)
-
   const [questions, setQuestions] = useState({})
   const [answers, setAnswers] = useState({})
+  const [chatHistory, setChatHistory] = useState({})
   const [askingId, setAskingId] = useState(null)
 
   // 1. Upload PDF
@@ -121,7 +118,61 @@ useEffect(() => {
     }
   }
 
-  // 3. Ask Questions from PDF
+  // 3. Download AI Notes as PDF
+  const downloadNotesPDF = (doc) => {
+    const notes = generatedNotes[doc.id]
+
+    if (!notes) {
+      alert('Please generate AI notes first!')
+      return
+    }
+
+    const pdf = new jsPDF()
+    const margin = 15
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    const maxWidth = pageWidth - margin * 2
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(18)
+    pdf.text('StudyOS - Smart Notes', margin, 20)
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(12)
+
+    pdf.text(
+      pdf.splitTextToSize(`Document: ${doc.name}`, maxWidth),
+      margin,
+      30
+    )
+
+    pdf.setFontSize(11)
+
+    const lines = pdf.splitTextToSize(
+      String(notes),
+      maxWidth
+    )
+
+    let y = 45
+
+    lines.forEach((line) => {
+      if (y > pageHeight - 15) {
+        pdf.addPage()
+        y = 20
+      }
+
+      pdf.text(line, margin, y)
+      y += 7
+    })
+
+    const fileName = doc.name
+      .replace(/\.pdf$/i, '')
+      .replace(/[^\w-]/g, '_')
+
+    pdf.save(`${fileName}-Smart-Notes.pdf`)
+  }
+
+  // 4. Ask Questions from PDF
   const askQuestion = async (doc) => {
     const question = questions[doc.id]?.trim()
 
@@ -158,6 +209,24 @@ useEffect(() => {
         [doc.id]: data.answer
       }))
 
+      // Save conversation history
+      setChatHistory((prev) => ({
+        ...prev,
+        [doc.id]: [
+          ...(prev[doc.id] || []),
+          {
+            question: question,
+            answer: data.answer
+          }
+        ]
+      }))
+
+      // Clear input after asking
+      setQuestions((prev) => ({
+        ...prev,
+        [doc.id]: ''
+      }))
+
     } catch (error) {
       alert(`AI Tutor Error: ${error.message}`)
     } finally {
@@ -165,7 +234,7 @@ useEffect(() => {
     }
   }
 
-  // 4. Remove Document
+  // 5. Remove Document
   const removeDocument = (id) => {
     setDocuments((prev) =>
       prev.filter((doc) => doc.id !== id)
@@ -188,6 +257,12 @@ useEffect(() => {
       delete updated[id]
       return updated
     })
+
+    setChatHistory((prev) => {
+      const updated = { ...prev }
+      delete updated[id]
+      return updated
+    })
   }
 
   return (
@@ -198,7 +273,6 @@ useEffect(() => {
 
       {/* PDF Upload Section */}
       <div className="upload-section">
-
         <h2>Upload Study Material</h2>
         <p>Select PDF files to extract their text.</p>
 
@@ -213,7 +287,6 @@ useEffect(() => {
         {loading && (
           <p>Uploading and extracting text...</p>
         )}
-
       </div>
 
       {/* Uploaded Documents */}
@@ -230,7 +303,6 @@ useEffect(() => {
             <div className="document-card" key={doc.id}>
 
               <div>
-
                 <h3>📄 {doc.name}</h3>
 
                 <p>
@@ -275,6 +347,16 @@ useEffect(() => {
                     </div>
                   )}
 
+                  <div style={{ marginTop: '12px', marginBottom: '12px' }}>
+                    <button
+                      className="download-notes-btn"
+                      onClick={() => downloadNotesPDF(doc)}
+                      disabled={!generatedNotes[doc.id]}
+                    >
+                      📥 Download Notes as PDF
+                    </button>
+                  </div>
+
                 </div>
 
                 {/* Ask Your PDF */}
@@ -293,10 +375,11 @@ useEffect(() => {
                       }))
                     }
                     onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
+                      if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
                         askQuestion(doc)
                       }
                     }}
+                    disabled={askingId === doc.id}
                   />
 
                   <button
@@ -311,15 +394,32 @@ useEffect(() => {
                       : 'Ask AI'}
                   </button>
 
-                  {answers[doc.id] && (
-                    <div className="ai-answer">
-                      <h4>AI Tutor Answer</h4>
+                  {/* Chat History */}
+                  <div className="chat-history">
 
-                      <pre>
-                        {answers[doc.id]}
-                      </pre>
-                    </div>
-                  )}
+                    {chatHistory[doc.id]?.map((chat, index) => (
+                      <div className="chat-message" key={index}>
+
+                        <div className="user-message">
+                          <strong>You:</strong>
+                          <p>{chat.question}</p>
+                        </div>
+
+                        <div className="ai-message">
+                          <strong>StudyOS AI:</strong>
+                          <p>{chat.answer}</p>
+                        </div>
+
+                      </div>
+                    ))}
+
+                    {askingId === doc.id && (
+                      <div className="ai-message typing-message">
+                        <p>StudyOS AI is thinking...</p>
+                      </div>
+                    )}
+
+                  </div>
 
                 </div>
 
