@@ -1,87 +1,109 @@
+
+import os
+import json
+import shutil
+
+import fitz
+from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
-import json
-from dotenv import load_dotenv
 from pydantic import BaseModel
-import fitz
-import os
-import shutil
+
 load_dotenv()
 
 client = Groq()
+
 app = FastAPI(title="StudyOS API")
 
-from fastapi.middleware.cors import CORSMiddleware
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://study-os-mocha-psi.vercel.app"
-],
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "https://study-os-mocha-psi.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Upload folder
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
+# Request Models
+class NotesRequest(BaseModel):
+    text: str
+
+
+class AskRequest(BaseModel):
+    text: str
+    question: str
+
+
+class QuizRequest(BaseModel):
+    text: str
+    num_questions: int = 5
+
+
+class StudyPlanRequest(BaseModel):
+    subjects: str
+    exam_date: str
+    daily_hours: int
+    weak_topics: str = ""
+
+
+# Home
 @app.get("/")
 def home():
     return {"message": "Welcome to StudyOS Backend!"}
 
 
+# Health Check
 @app.get("/health")
 def health():
     return {"status": "healthy"}
 
 
+# Upload PDF
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
 
     if not file.filename.lower().endswith(".pdf"):
         return {"error": "Only PDF files are allowed"}
 
-    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    filename = os.path.basename(file.filename)
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    document = fitz.open(file_path)
+        document = fitz.open(file_path)
 
-    extracted_text = ""
+        extracted_text = ""
 
-    for page in document:
-        extracted_text += page.get_text()
+        for page in document:
+            extracted_text += page.get_text()
 
-    document.close()
+        document.close()
 
-    return {
-        "filename": file.filename,
-        "message": "PDF uploaded successfully!",
-        "text": extracted_text,
-        "total_characters": len(extracted_text)
-    }
-class NotesRequest(BaseModel):
-    text: str
-class AskRequest(BaseModel):
-    text: str
-    question: str
-class QuizRequest(BaseModel):
-    text: str
-    num_questions: int = 5
+        return {
+            "filename": filename,
+            "message": "PDF uploaded successfully!",
+            "text": extracted_text,
+            "total_characters": len(extracted_text)
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
+# Ask Your PDF
 @app.post("/ask-pdf")
 def ask_pdf(request: AskRequest):
 
@@ -105,10 +127,12 @@ def ask_pdf(request: AskRequest):
 
                     Explain concepts in simple language.
                     Use examples when the PDF provides them.
+
                     If the answer is not available in the PDF,
                     clearly say:
                     'This information is not available in
                     the uploaded document.'
+
                     Do not invent facts.
                     """
                 },
@@ -133,6 +157,8 @@ def ask_pdf(request: AskRequest):
     except Exception as e:
         return {"error": str(e)}
 
+
+# Generate Quiz
 @app.post("/generate-quiz")
 def generate_quiz(request: QuizRequest):
 
@@ -202,11 +228,15 @@ def generate_quiz(request: QuizRequest):
         return quiz_data
 
     except json.JSONDecodeError:
-        return {"error": "AI returned an invalid quiz format. Please try again."}
+        return {
+            "error": "AI returned an invalid quiz format. Please try again."
+        }
 
     except Exception as e:
         return {"error": str(e)}
 
+
+# Generate Notes
 @app.post("/generate-notes")
 def generate_notes(request: NotesRequest):
 
@@ -221,6 +251,7 @@ def generate_notes(request: NotesRequest):
                     "role": "system",
                     "content": """
                     You are StudyOS, an academic notes assistant.
+
                     Generate clear and structured study notes
                     using only the supplied PDF content.
 
@@ -251,16 +282,8 @@ def generate_notes(request: NotesRequest):
     except Exception as e:
         return {"error": str(e)}
 
-    
+
 # AI Study Planner
-
-class StudyPlanRequest(BaseModel):
-    subjects: str
-    exam_date: str
-    daily_hours: int
-    weak_topics: str = ""
-
-
 @app.post("/generate-study-plan")
 def generate_study_plan(request: StudyPlanRequest):
 
