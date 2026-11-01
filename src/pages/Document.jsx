@@ -20,7 +20,25 @@ function Document() {
   const [generatingId, setGeneratingId] = useState(null)
   const [questions, setQuestions] = useState({})
   const [answers, setAnswers] = useState({})
-  const [chatHistory, setChatHistory] = useState({})
+  const [chatHistory, setChatHistory] = useState(() => {
+  try {
+    return JSON.parse(
+      localStorage.getItem('studyos_chat_history') || '{}'
+    )
+  } catch {
+    return {}
+  }
+})
+useEffect(() => {
+  try {
+    localStorage.setItem(
+      'studyos_chat_history',
+      JSON.stringify(chatHistory)
+    )
+  } catch (error) {
+    console.error('Chat history save failed:', error)
+  }
+}, [chatHistory])
   const [askingId, setAskingId] = useState(null)
 
   // 1. Upload PDF
