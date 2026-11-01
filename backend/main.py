@@ -352,3 +352,28 @@ def generate_study_plan(request: StudyPlanRequest):
 
     except Exception as e:
         return {"error": str(e)}
+from pydantic import BaseModel
+from fastapi import HTTPException
+
+class TutorRequest(BaseModel):
+    message: str
+
+@app.post("/ai-tutor")
+async def ai_tutor(request: TutorRequest):
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are StudyOS AI Tutor. Explain concepts simply and step by step."
+                },
+                {"role": "user", "content": request.message}
+            ],
+            max_tokens=1000
+        )
+
+        return {"reply": response.choices[0].message.content}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
