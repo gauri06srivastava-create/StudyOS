@@ -1245,3 +1245,397 @@ details summary {
 .typing-message {
   opacity: 0.7;
 }
+
+/* =================================
+   STUDYOS - GLOBAL UI POLISH
+================================= */
+
+:root {
+  --bg-main: #0b1020;
+  --bg-card: #151e30;
+  --bg-card-hover: #1c2940;
+  --border-color: #29364d;
+  --primary: #8b7cff;
+  --primary-hover: #7565ee;
+  --text-main: #f1f5f9;
+  --text-muted: #9ca3af;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Page headings */
+
+.page h1 {
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.7px;
+}
+
+.page h2 {
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.page h3 {
+  font-weight: 600;
+}
+
+/* Cards */
+
+.stat-card,
+.action-card,
+.progress-card,
+.upload-section,
+.document-card,
+.quiz-question,
+.quiz-result,
+.quiz-generator,
+.quiz-history-card,
+.timer-card,
+.chat-container {
+  transition: border-color 0.25s ease,
+              transform 0.25s ease,
+              background 0.25s ease;
+}
+
+.stat-card:hover,
+.progress-card:hover,
+.quiz-history-card:hover {
+  border-color: #6259a8;
+  transform: translateY(-2px);
+}
+
+/* Buttons */
+
+.page button {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #ffffff;
+  border: none;
+  padding: 11px 19px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.page button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9, #4f46e5);
+  transform: translateY(-2px);
+}
+
+.page button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Inputs */
+
+.page input:not([type="radio"]):not([type="checkbox"]),
+.page select,
+.page textarea {
+  max-width: 100%;
+  outline: none;
+  transition: border-color 0.2s ease,
+              box-shadow 0.2s ease;
+}
+
+.page input:focus,
+.page select:focus,
+.page textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(139, 124, 255, 0.13);
+}
+
+/* Progress bars */
+
+.progress-fill {
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+}
+
+/* Better text spacing */
+
+.progress-card p,
+.stat-card p {
+  line-height: 1.7;
+}
+
+.page section,
+.progress-section {
+  margin-bottom: 32px;
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b1020;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #394565;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7165bd;
+}
+
+/* =================================
+   TABLET RESPONSIVENESS
+================================= */
+
+@media (max-width: 800px) {
+
+  .main-content {
+    padding: 25px 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .actions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-header {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+}
+
+/* =================================
+   MOBILE RESPONSIVENESS
+================================= */
+
+@media (max-width: 600px) {
+
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: relative;
+    width: 100%;
+    min-height: auto;
+    height: auto;
+    padding: 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    z-index: 10;
+  }
+
+  .sidebar h2 {
+    font-size: 23px;
+    margin-bottom: 15px;
+  }
+
+  .sidebar nav {
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .sidebar nav a {
+    flex-shrink: 0;
+    padding: 10px 13px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    min-height: auto;
+    padding: 22px 15px;
+  }
+
+  .page h1 {
+    font-size: 25px;
+  }
+
+  .page h2 {
+    font-size: 19px;
+  }
+
+  .stats-grid,
+  .actions-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+
+  .stat-card,
+  .action-card,
+  .progress-card {
+    padding: 19px;
+  }
+
+  .document-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .document-card button {
+    width: 100%;
+  }
+
+  .chat-container {
+    height: 500px;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+
+  .user-message {
+    margin-left: 10px;
+  }
+
+  .ai-message {
+    margin-right: 10px;
+  }
+
+  .chat-input {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .chat-input button {
+    padding: 10px 14px;
+  }
+
+  .timer-display {
+    font-size: 52px;
+  }
+
+  .quiz-generator,
+  .quiz-question,
+  .quiz-result {
+    padding: 17px;
+  }
+
+  .score-chart {
+    gap: 7px;
+  }
+
+  .chart-bar-wrapper {
+    width: 25px;
+  }
+
+  .revision-task-header {
+    align-items: flex-start;
+  }
+
+}
+
+/* =================================
+   SMALL MOBILE SCREENS
+================================= */
+
+@media (max-width: 380px) {
+
+  .main-content {
+    padding: 18px 12px;
+  }
+
+  .sidebar {
+    padding: 12px;
+  }
+
+  .sidebar nav a {
+    padding: 9px 11px;
+    font-size: 12px;
+  }
+
+  .timer-display {
+    font-size: 43px;
+  }
+
+  .page button {
+    max-width: 100%;
+  }
+
+}
+
+.sidebar-logo {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 5px;
+}
+
+.sidebar-logo span {
+  color: #9b7bff;
+}
+
+.sidebar-subtitle {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: #9294ad;
+  margin-bottom: 30px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #b9bad0;
+  text-decoration: none;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background: rgba(155, 123, 255, 0.12);
+  color: white;
+  transform: translateX(3px);
+}
+
+.sidebar-link.active {
+  background: linear-gradient(90deg, #7654d8, #6042b7);
+  color: white;
+  box-shadow: 0 4px 15px rgba(118, 84, 216, 0.25);
+}
+
+.sidebar-icon {
+  width: 22px;
+  text-align: center;
+  font-size: 17px;
+}
+
+.sidebar-footer {
+  margin-top: 35px;
+  color: #9294ad;
+  font-size: 12px;
+}

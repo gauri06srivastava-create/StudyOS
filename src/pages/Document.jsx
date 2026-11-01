@@ -2,51 +2,78 @@
 import { useEffect, useState } from 'react'
 import jsPDF from 'jspdf'
 
-function Document() {
-  const [documents, setDocuments] = useState(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem('studyos_documents') || '[]'
-      )
-    } catch {
-      return []
-    }
-  })
+function readStorage(key, fallback) {
+  try {
+    const saved = localStorage.getItem(key)
+    return saved ? JSON.parse(saved) : fallback
+  } catch (error) {
+    console.error(`${key} read failed:`, error)
+    return fallback
+  }
+}
 
-  
+function Document() {
+  const [documents, setDocuments] = useState(() =>
+    readStorage('studyos_documents', [])
+  )
+
+  const [generatedNotes, setGeneratedNotes] = useState(() =>
+    readStorage('studyos_generated_notes', {})
+  )
+
+  const [chatHistory, setChatHistory] = useState(() =>
+    readStorage('studyos_chat_history', {})
+  )
 
   const [loading, setLoading] = useState(false)
-  const [generatedNotes, setGeneratedNotes] = useState({})
   const [generatingId, setGeneratingId] = useState(null)
   const [questions, setQuestions] = useState({})
-  const [answers, setAnswers] = useState({})
-  const [chatHistory, setChatHistory] = useState(() => {
-  try {
-    return JSON.parse(
-      localStorage.getItem('studyos_chat_history') || '{}'
-    )
-  } catch {
-    return {}
-  }
-})
-useEffect(() => {
-  try {
-    localStorage.setItem(
-      'studyos_chat_history',
-      JSON.stringify(chatHistory)
-    )
-  } catch (error) {
-    console.error('Chat history save failed:', error)
-  }
-}, [chatHistory])
   const [askingId, setAskingId] = useState(null)
+
+  // Save documents
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'studyos_documents',
+        JSON.stringify(documents)
+      )
+    } catch (error) {
+      console.error('Documents save failed:', error)
+      alert('Unable to save documents. Browser storage may be full.')
+    }
+  }, [documents])
+
+  // Save generated notes
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'studyos_generated_notes',
+        JSON.stringify(generatedNotes)
+      )
+    } catch (error) {
+      console.error('Notes save failed:', error)
+    }
+  }, [generatedNotes])
+
+  // Save chat history
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'studyos_chat_history',
+        JSON.stringify(chatHistory)
+      )
+    } catch (error) {
+      console.error('Chat history save failed:', error)
+    }
+  }, [chatHistory])
 
   // 1. Upload PDF
   const handleFileChange = async (event) => {
     const selectedFiles = Array.from(event.target.files)
 
     const pdfFiles = selectedFiles.filter(
-      (file) => file.type === 'application/pdf'
+      (file) => file.type === 'application/pdf' ||
+        file.name.toLowerCase().endsWith('.pdf')
     )
 
     if (pdfFiles.length !== selectedFiles.length) {
@@ -80,15 +107,17 @@ useEffect(() => {
           throw new Error(data.error)
         }
 
+        const newDocument = {
+          id: `${Date.now()}-${file.name}`,
+          name: data.filename,
+          size: file.size,
+          text: data.text,
+          characters: data.total_characters
+        }
+
         setDocuments((prev) => [
           ...prev,
-          {
-            id: `${Date.now()}-${file.name}`,
-            name: data.filename,
-            size: file.size,
-            text: data.text,
-            characters: data.total_characters
-          }
+          newDocument
         ])
 
       } catch (error) {
@@ -222,24 +251,17 @@ useEffect(() => {
         throw new Error(data.error || 'Failed to get answer')
       }
 
-      setAnswers((prev) => ({
-        ...prev,
-        [doc.id]: data.answer
-      }))
-
-      // Save conversation history
       setChatHistory((prev) => ({
         ...prev,
         [doc.id]: [
           ...(prev[doc.id] || []),
           {
-            question: question,
+            question,
             answer: data.answer
           }
         ]
       }))
 
-      // Clear input after asking
       setQuestions((prev) => ({
         ...prev,
         [doc.id]: ''
@@ -264,19 +286,13 @@ useEffect(() => {
       return updated
     })
 
-    setQuestions((prev) => {
-      const updated = { ...prev }
-      delete updated[id]
-      return updated
-    })
-
-    setAnswers((prev) => {
-      const updated = { ...prev }
-      delete updated[id]
-      return updated
-    })
-
     setChatHistory((prev) => {
+      const updated = { ...prev }
+      delete updated[id]
+      return updated
+    })
+
+    setQuestions((prev) => {
       const updated = { ...prev }
       delete updated[id]
       return updated
@@ -285,7 +301,6 @@ useEffect(() => {
 
   return (
     <div className="page">
-
       <h1>My Documents 📚</h1>
       <p>Upload and manage your study materials.</p>
 
@@ -309,17 +324,13 @@ useEffect(() => {
 
       {/* Uploaded Documents */}
       <div className="documents-list">
-
         <h2>Uploaded Documents ({documents.length})</h2>
 
         {documents.length === 0 ? (
           <p>No documents uploaded yet.</p>
         ) : (
-
           documents.map((doc) => (
-
             <div className="document-card" key={doc.id}>
-
               <div>
                 <h3>📄 {doc.name}</h3>
 
@@ -334,7 +345,6 @@ useEffect(() => {
                 {/* Extracted PDF Text */}
                 <details>
                   <summary>View Extracted Text</summary>
-
                   <pre className="extracted-text">
                     {doc.text || 'No readable text found in this PDF.'}
                   </pre>
@@ -342,7 +352,6 @@ useEffect(() => {
 
                 {/* AI Notes Generator */}
                 <div className="generated-notes-section">
-
                   <button
                     onClick={() => generateNotes(doc)}
                     disabled={
@@ -358,10 +367,7 @@ useEffect(() => {
                   {generatedNotes[doc.id] && (
                     <div className="generated-notes">
                       <h3>✨ AI Generated Notes</h3>
-
-                      <pre>
-                        {generatedNotes[doc.id]}
-                      </pre>
+                      <pre>{generatedNotes[doc.id]}</pre>
                     </div>
                   )}
 
@@ -374,12 +380,10 @@ useEffect(() => {
                       📥 Download Notes as PDF
                     </button>
                   </div>
-
                 </div>
 
                 {/* Ask Your PDF */}
                 <div className="ask-pdf-section">
-
                   <h3>🤖 Ask Your PDF</h3>
 
                   <input
@@ -393,7 +397,10 @@ useEffect(() => {
                       }))
                     }
                     onKeyDown={(event) => {
-                      if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                      if (
+                        event.key === 'Enter' &&
+                        !event.nativeEvent.isComposing
+                      ) {
                         askQuestion(doc)
                       }
                     }}
@@ -414,10 +421,8 @@ useEffect(() => {
 
                   {/* Chat History */}
                   <div className="chat-history">
-
                     {chatHistory[doc.id]?.map((chat, index) => (
                       <div className="chat-message" key={index}>
-
                         <div className="user-message">
                           <strong>You:</strong>
                           <p>{chat.question}</p>
@@ -427,7 +432,6 @@ useEffect(() => {
                           <strong>StudyOS AI:</strong>
                           <p>{chat.answer}</p>
                         </div>
-
                       </div>
                     ))}
 
@@ -436,24 +440,17 @@ useEffect(() => {
                         <p>StudyOS AI is thinking...</p>
                       </div>
                     )}
-
                   </div>
-
                 </div>
-
               </div>
 
               <button onClick={() => removeDocument(doc.id)}>
                 Remove
               </button>
-
             </div>
-
           ))
         )}
-
       </div>
-
     </div>
   )
 }
