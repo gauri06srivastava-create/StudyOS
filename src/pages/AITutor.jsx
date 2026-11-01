@@ -1,8 +1,9 @@
-
 import { useState } from 'react'
 
 function AITutor() {
   const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -10,15 +11,57 @@ function AITutor() {
     }
   ])
 
-  const handleSend = () => {
-    if (!message.trim()) return
+  const handleSend = async () => {
+    if (!message.trim() || loading) return
 
-    setMessages([
-      ...messages,
-      { role: 'user', text: message }
+    const userMessage = message.trim()
+
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', text: userMessage }
     ])
 
     setMessage('')
+    setLoading(true)
+
+    try {
+      const response = await fetch(
+        'https://studyos-08bx.onrender.com/ai-tutor',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: userMessage
+          })
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'AI Tutor request failed')
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: data.reply || 'I could not generate a response.'
+        }
+      ])
+    } catch (error) {
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: `Error: ${error.message}`
+        }
+      ])
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -29,15 +72,24 @@ function AITutor() {
       <div className="chat-container">
         <div className="chat-header">
           <h3>StudyOS Assistant</h3>
-          <span>Ready to help you learn</span>
+          <span>{loading ? 'Thinking...' : 'Ready to help you learn'}</span>
         </div>
 
         <div className="chat-messages">
           {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.role}`}>
+            <div
+              key={index}
+              className={`message ${msg.role}`}
+            >
               {msg.text}
             </div>
           ))}
+
+          {loading && (
+            <div className="message assistant">
+              Thinking...
+            </div>
+          )}
         </div>
 
         <div className="chat-input">
@@ -45,13 +97,15 @@ function AITutor() {
             type="text"
             placeholder="Ask your question..."
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setMessage(e.target.value)}
+            onKeyDown={e => {
               if (e.key === 'Enter') handleSend()
             }}
           />
 
-          <button onClick={handleSend}>Send</button>
+          <button onClick={handleSend} disabled={loading}>
+            {loading ? 'Sending...' : 'Send'}
+          </button>
         </div>
       </div>
     </div>
