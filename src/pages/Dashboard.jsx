@@ -42,11 +42,17 @@ function Dashboard() {
 
 
   useEffect(() => {
-  fetch('https://studyos-08bx.onrender.com/health')
-    .then(response => response.json())
-    .then(data => setBackendStatus(data.status))
-    .catch(() => setBackendStatus('Disconnected'))
-}, [])
+  fetch('https://studyos-08bx.onrender.com/health', {
+    method: 'GET',
+    mode: 'cors',
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error('Backend error');
+      return res.json();
+    })
+    .then((data) => setBackendStatus(data.status))
+    .catch(() => setBackendStatus('Disconnected'));
+}, []);
 
   // Average quiz score
   const averageScore = history.length > 0
