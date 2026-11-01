@@ -42,7 +42,7 @@ function Dashboard() {
 
 
   useEffect(() => {
-  fetch('http://127.0.0.1:8000/health')
+  fetch('https://studyos-08bx.onrender.com/health')
     .then(response => response.json())
     .then(data => setBackendStatus(data.status))
     .catch(() => setBackendStatus('Disconnected'))

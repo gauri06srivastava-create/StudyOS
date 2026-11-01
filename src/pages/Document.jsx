@@ -90,7 +90,7 @@ function Document() {
 
       try {
         const response = await fetch(
-          'http://127.0.0.1:8000/upload-pdf',
+          'https://studyos-08bx.onrender.com/upload-pdf',
           {
             method: 'POST',
             body: formData
@@ -135,7 +135,7 @@ function Document() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/generate-notes',
+        'https://studyos-08bx.onrender.com/generate-notes',
         {
           method: 'POST',
           headers: {
@@ -232,7 +232,7 @@ function Document() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/ask-pdf',
+        'https://studyos-08bx.onrender.com/ask-pdf',
         {
           method: 'POST',
           headers: {

@@ -109,7 +109,7 @@ uvicorn main:app --reload
 
 Backend runs at:
 
-http://127.0.0.1:8000
+https://studyos-08bx.onrender.com
 
 ## 🎯 Project Goal
 

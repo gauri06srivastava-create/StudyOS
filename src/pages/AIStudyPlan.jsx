@@ -32,7 +32,7 @@ function AIStudyPlan() {
 
     try {
       const response = await fetch(
-        'http://127.0.0.1:8000/generate-study-plan',
+        'https://studyos-08bx.onrender.com/generate-study-plan',
         {
           method: 'POST',
           headers: {
