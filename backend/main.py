@@ -5,46 +5,21 @@ import shutil
 
 import fitz
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 from pydantic import BaseModel
-from fastapi import HTTPException
 
+
+# Environment setup
 load_dotenv()
 
 client = Groq()
 
 app = FastAPI(title="StudyOS API")
-class TutorRequest(BaseModel):
-    message: str
 
 
-@app.post("/ai-tutor")
-async def ai_tutor(request: TutorRequest):
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are StudyOS AI Tutor. Explain concepts clearly, simply, and step by step for students."
-                },
-                {
-                    "role": "user",
-                    "content": request.message
-                }
-            ],
-            temperature=0.7,
-            max_tokens=1000
-        )
-
-        return {
-            "reply": response.choices[0].message.content
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -52,6 +27,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Upload folder
 UPLOAD_FOLDER = "uploads"
@@ -80,6 +56,10 @@ class StudyPlanRequest(BaseModel):
     weak_topics: str = ""
 
 
+class TutorRequest(BaseModel):
+    message: str
+
+
 # Home
 @app.get("/")
 def home():
@@ -97,7 +77,10 @@ def health():
 async def upload_pdf(file: UploadFile = File(...)):
 
     if not file.filename.lower().endswith(".pdf"):
-        return {"error": "Only PDF files are allowed"}
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are allowed"
+        )
 
     filename = os.path.basename(file.filename)
     file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -123,7 +106,7 @@ async def upload_pdf(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Ask Your PDF
@@ -131,10 +114,16 @@ async def upload_pdf(file: UploadFile = File(...)):
 def ask_pdf(request: AskRequest):
 
     if not request.text.strip():
-        return {"error": "No document text provided"}
+        raise HTTPException(
+            status_code=400,
+            detail="No document text provided"
+        )
 
     if not request.question.strip():
-        return {"error": "Please enter a question"}
+        raise HTTPException(
+            status_code=400,
+            detail="Please enter a question"
+        )
 
     try:
         response = client.chat.completions.create(
@@ -178,7 +167,7 @@ def ask_pdf(request: AskRequest):
         }
 
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Generate Quiz
@@ -186,7 +175,10 @@ def ask_pdf(request: AskRequest):
 def generate_quiz(request: QuizRequest):
 
     if not request.text.strip():
-        return {"error": "No document text provided"}
+        raise HTTPException(
+            status_code=400,
+            detail="No document text provided"
+        )
 
     try:
         response = client.chat.completions.create(
@@ -251,12 +243,13 @@ def generate_quiz(request: QuizRequest):
         return quiz_data
 
     except json.JSONDecodeError:
-        return {
-            "error": "AI returned an invalid quiz format. Please try again."
-        }
+        raise HTTPException(
+            status_code=500,
+            detail="AI returned an invalid quiz format. Please try again."
+        )
 
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Generate Notes
@@ -264,7 +257,10 @@ def generate_quiz(request: QuizRequest):
 def generate_notes(request: NotesRequest):
 
     if not request.text.strip():
-        return {"error": "No PDF text provided"}
+        raise HTTPException(
+            status_code=400,
+            detail="No PDF text provided"
+        )
 
     try:
         response = client.chat.completions.create(
@@ -303,7 +299,7 @@ def generate_notes(request: NotesRequest):
         return {"notes": notes}
 
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # AI Study Planner
@@ -351,29 +347,50 @@ def generate_study_plan(request: StudyPlanRequest):
         return {"plan": plan}
 
     except Exception as e:
-        return {"error": str(e)}
-from pydantic import BaseModel
-from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
 
-class TutorRequest(BaseModel):
-    message: str
 
+# AI Tutor
 @app.post("/ai-tutor")
 async def ai_tutor(request: TutorRequest):
+
+    if not request.message.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Please enter a message."
+        )
+
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {
                     "role": "system",
-                    "content": "You are StudyOS AI Tutor. Explain concepts simply and step by step."
+                    "content": """
+                    You are StudyOS AI Tutor.
+
+                    Help students understand academic concepts.
+                    Explain everything in simple language.
+                    Give step-by-step explanations.
+                    Use examples wherever helpful.
+                    Be friendly, clear and accurate.
+                    """
                 },
-                {"role": "user", "content": request.message}
+                {
+                    "role": "user",
+                    "content": request.message
+                }
             ],
+            temperature=0.7,
             max_tokens=1000
         )
 
-        return {"reply": response.choices[0].message.content}
+        return {
+            "reply": response.choices[0].message.content
+        }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
