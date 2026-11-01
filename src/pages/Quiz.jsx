@@ -4,9 +4,7 @@ import { useState } from 'react'
 function Quiz() {
   const [documents] = useState(() => {
     try {
-      return JSON.parse(
-        localStorage.getItem('studyos_documents') || '[]'
-      )
+      return JSON.parse(localStorage.getItem('studyos_documents') || '[]')
     } catch {
       return []
     }
@@ -18,6 +16,7 @@ function Quiz() {
   const [selectedAnswers, setSelectedAnswers] = useState({})
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
 
   const [quizHistory, setQuizHistory] = useState(() => {
     try {
@@ -29,9 +28,30 @@ function Quiz() {
     }
   })
 
-  const [error, setError] = useState('')
+  const selectedDocument = documents.find(
+    item => String(item.id) === String(selectedDoc)
+  )
 
-  // Generate AI Quiz
+  const calculateScore = () => {
+    return quiz.filter(
+      (question, index) =>
+        selectedAnswers[index] === question.answer
+    ).length
+  }
+
+  const getWeakTopics = () => {
+    const topics = {}
+
+    quiz.forEach((question, index) => {
+      if (selectedAnswers[index] !== question.answer) {
+        const topic = question.topic || 'Uncategorized'
+        topics[topic] = (topics[topic] || 0) + 1
+      }
+    })
+
+    return topics
+  }
+
   const generateQuiz = async () => {
     const doc = documents.find(
       item => String(item.id) === String(selectedDoc)
@@ -88,15 +108,6 @@ function Quiz() {
     }
   }
 
-  // Calculate score
-  const calculateScore = () => {
-    return quiz.filter(
-      (question, index) =>
-        selectedAnswers[index] === question.answer
-    ).length
-  }
-
-  // Submit Quiz
   const submitQuiz = () => {
     if (Object.keys(selectedAnswers).length !== quiz.length) {
       setError('Please answer all questions before submitting.')
@@ -106,9 +117,8 @@ function Quiz() {
     setError('')
 
     const score = calculateScore()
-
-    const doc = documents.find(
-      item => String(item.id) === String(selectedDoc)
+    const percentage = Number(
+      ((score / quiz.length) * 100).toFixed(2)
     )
 
     const incorrectTopics = quiz
@@ -119,29 +129,47 @@ function Quiz() {
 
     const attempt = {
       id: Date.now(),
-      documentName: doc?.name || 'Unknown Document',
-      score: score,
+      documentName: selectedDocument?.name || 'Unknown Document',
+      score,
       totalQuestions: quiz.length,
-      percentage: Number(
-        ((score / quiz.length) * 100).toFixed(2)
-      ),
+      percentage,
       date: new Date().toLocaleString(),
-      incorrectTopics: incorrectTopics
+      incorrectTopics
     }
 
-    setQuizHistory(prev => {
-      const updatedHistory = [attempt, ...prev]
+    const updatedHistory = [attempt, ...quizHistory]
 
-      localStorage.setItem(
-        'studyos_quiz_history',
-        JSON.stringify(updatedHistory)
-      )
+    setQuizHistory(updatedHistory)
 
-      return updatedHistory
-    })
+    localStorage.setItem(
+      'studyos_quiz_history',
+      JSON.stringify(updatedHistory)
+    )
 
     setSubmitted(true)
   }
+
+  const retakeQuiz = () => {
+    setSelectedAnswers({})
+    setSubmitted(false)
+    setError('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const startNewQuiz = () => {
+    setQuiz([])
+    setSelectedAnswers({})
+    setSubmitted(false)
+    setError('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const score = calculateScore()
+  const percentage = quiz.length
+    ? ((score / quiz.length) * 100).toFixed(2)
+    : 0
+
+  const weakTopics = getWeakTopics()
 
   return (
     <div className="page">
@@ -165,6 +193,7 @@ function Quiz() {
             <select
               value={selectedDoc}
               onChange={e => setSelectedDoc(e.target.value)}
+              disabled={loading}
             >
               <option value="">Choose a document</option>
 
@@ -180,6 +209,7 @@ function Quiz() {
             <select
               value={numQuestions}
               onChange={e => setNumQuestions(Number(e.target.value))}
+              disabled={loading}
             >
               <option value={5}>5 Questions</option>
               <option value={10}>10 Questions</option>
@@ -243,15 +273,23 @@ function Quiz() {
                 <div className="quiz-explanation">
 
                   <p>
-                    <strong>Topic:</strong> {question.topic || 'Uncategorized'}
+                    <strong>Your Answer:</strong>{' '}
+                    {selectedAnswers[index]}
                   </p>
 
                   <p>
-                    <strong>Correct Answer:</strong> {question.answer}
+                    <strong>Correct Answer:</strong>{' '}
+                    {question.answer}
                   </p>
 
                   <p>
-                    <strong>Explanation:</strong> {question.explanation}
+                    <strong>Topic:</strong>{' '}
+                    {question.topic || 'Uncategorized'}
+                  </p>
+
+                  <p>
+                    <strong>Explanation:</strong>{' '}
+                    {question.explanation || 'No explanation available.'}
                   </p>
 
                   <p>
@@ -268,32 +306,66 @@ function Quiz() {
           ))}
 
           {!submitted ? (
+
             <button
               onClick={submitQuiz}
               disabled={Object.keys(selectedAnswers).length !== quiz.length}
             >
               Submit Quiz
             </button>
+
           ) : (
+
             <div className="quiz-result">
 
               <h2>🎉 Quiz Completed!</h2>
 
               <h3>
-                Your Score: {calculateScore()} / {quiz.length}
+                Your Score: {score} / {quiz.length}
               </h3>
 
-              <h3>
-                Percentage: {(
-                  (calculateScore() / quiz.length) * 100
-                ).toFixed(2)}%
-              </h3>
+              <h3>Percentage: {percentage}%</h3>
 
-              <button onClick={generateQuiz}>
-                Generate New Quiz
-              </button>
+              <div className="quiz-result-stats">
+                <div>
+                  <h3>✅ {score}</h3>
+                  <p>Correct Answers</p>
+                </div>
+
+                <div>
+                  <h3>❌ {quiz.length - score}</h3>
+                  <p>Wrong Answers</p>
+                </div>
+              </div>
+
+              <h3>📊 Weak Topic Analysis</h3>
+
+              {Object.keys(weakTopics).length === 0 ? (
+                <p>Excellent! No weak topics found.</p>
+              ) : (
+                <div className="weak-topic-list">
+                  {Object.entries(weakTopics).map(([topic, count]) => (
+                    <p key={topic}>
+                      ⚠️ {topic}: {count} incorrect answer(s)
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              <div className="quiz-result-actions">
+
+                <button onClick={retakeQuiz}>
+                  🔄 Retake Quiz
+                </button>
+
+                <button onClick={startNewQuiz}>
+                  ✨ Generate New Quiz
+                </button>
+
+              </div>
 
             </div>
+
           )}
 
         </div>
@@ -306,11 +378,14 @@ function Quiz() {
         {quizHistory.length === 0 ? (
           <p>No quiz attempts yet. Complete your first quiz!</p>
         ) : (
+
           quizHistory.map(attempt => (
+
             <div
               className="quiz-history-card"
               key={attempt.id}
             >
+
               <h3>{attempt.documentName}</h3>
 
               <p>
@@ -318,9 +393,20 @@ function Quiz() {
               </p>
 
               <p>Percentage: {attempt.percentage}%</p>
+
               <p>Date: {attempt.date}</p>
+
+              <p>
+                Weak Topics:{' '}
+                {attempt.incorrectTopics?.length
+                  ? [...new Set(attempt.incorrectTopics)].join(', ')
+                  : 'None'}
+              </p>
+
             </div>
+
           ))
+
         )}
 
       </div>
